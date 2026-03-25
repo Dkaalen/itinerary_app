@@ -1,5 +1,5 @@
 import streamlit as st
-from activity import DESTINATIONS, get_activities
+from activity import get_activities, destination_options
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="Nordic Itinerary Builder", layout="wide")
