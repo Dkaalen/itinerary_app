@@ -88,7 +88,8 @@ def show_price_card(adult_price, kid_price, description=""):
 
 def render_destination_activities(destination, nights, key_prefix):
     selected_labels = []
-    total = 0
+    total_adult = 0
+    total_kid = 0
 
     activities = destination_activity_options(destination)
 
@@ -96,7 +97,7 @@ def render_destination_activities(destination, nights, key_prefix):
 
     if not activities:
         st.markdown("<div class='card'>No activities available yet.</div>", unsafe_allow_html=True)
-        return ["No activity selected"] * nights, total
+        return ["No activity selected"] * nights, total_adult, total_kid
 
     labels = [activity_name(a) for a in activities]
 
@@ -119,21 +120,29 @@ def render_destination_activities(destination, nights, key_prefix):
         description = activity_description(selected_activity)
 
         show_price_card(adult_price, kid_price, description)
-        total += adult_price
+        total_adult += adult_price
+        total_kid += kid_price
 
-    return selected_labels, total
+    return selected_labels, total_adult, total_kid
 
 
 # --- LAYOUT ---
 col1, col2 = st.columns([2, 1])
 
-total_price = 0
+adult_price_total = 0
+kid_price_total = 0
 bergen_selected = []
 bergen_nights = 0
 add_flam = False
 
 with col1:
-    # --- START ---
+    st.subheader("Travel details")
+
+    travel_date = st.date_input("Date of travel")
+    adults = st.number_input("Number of adults", min_value=1, step=1)
+    kids = st.number_input("Number of kids (3 - 12 years old)", min_value=0, step=1)
+    infants = st.number_input("Number of infants (0 - 2 years old)", min_value=0, step=1)
+
     st.subheader("Start your journey")
     destination = st.selectbox("Starting destination", DESTINATIONS)
 
@@ -142,14 +151,14 @@ with col1:
 
     nights = st.number_input("Number of nights", min_value=1, max_value=5, step=1)
 
-    selected_activities, section_total = render_destination_activities(
+    selected_activities, section_adult_total, section_kid_total = render_destination_activities(
         destination=destination,
         nights=nights,
         key_prefix="start",
     )
-    total_price += section_total
+    adult_price_total += section_adult_total
+    kid_price_total += section_kid_total
 
-    # --- NEXT DESTINATION ---
     st.subheader("Continue your journey")
 
     next_destination = st.selectbox("Next destination", list(TRANSPORT_OPTIONS.keys()))
@@ -167,16 +176,15 @@ with col1:
     transport_kid = field(selected_transport, "kid", 0) or 0
 
     show_price_card(transport_adult, transport_kid)
-    total_price += transport_adult
+    adult_price_total += transport_adult
+    kid_price_total += transport_kid
 
-    # --- FLÅM OPTION ---
     if "Nutshell" in transport_choice:
         add_flam = st.checkbox("Add overnight stay in Flåm")
 
         if add_flam:
             st.markdown("<div class='card'>Flåm overnight stay added</div>", unsafe_allow_html=True)
 
-    # --- BERGEN ---
     if next_destination == "Bergen":
         st.subheader("Stay in Bergen")
 
@@ -185,15 +193,23 @@ with col1:
 
         bergen_nights = st.number_input("Nights in Bergen", min_value=1, max_value=5, step=1)
 
-        bergen_selected, bergen_total = render_destination_activities(
+        bergen_selected, bergen_adult_total, bergen_kid_total = render_destination_activities(
             destination="Bergen",
             nights=bergen_nights,
             key_prefix="bergen",
         )
-        total_price += bergen_total
+        adult_price_total += bergen_adult_total
+        kid_price_total += bergen_kid_total
 
 with col2:
     st.subheader("Your itinerary")
+
+    st.markdown(f"**Date of travel:** {travel_date}")
+    st.markdown(f"**Adults:** {adults}")
+    st.markdown(f"**Kids:** {kids}")
+    st.markdown(f"**Infants:** {infants}")
+
+    st.markdown("---")
 
     st.markdown(f"**Start:** {destination}")
     st.markdown(f"**Nights:** {nights}")
@@ -214,7 +230,15 @@ with col2:
 
     st.markdown("---")
     st.subheader("Estimated price")
-    st.markdown(f"### {total_price} € per adult")
+
+    total_adult_cost = adult_price_total * adults
+    total_kid_cost = kid_price_total * kids
+    grand_total = total_adult_cost + total_kid_cost
+
+    st.markdown(f"**Adults total:** {total_adult_cost} €")
+    st.markdown(f"**Kids total:** {total_kid_cost} €")
+    st.markdown(f"**Infants total:** 0 €")
+    st.markdown(f"### Grand total: {grand_total} €")
 
     end_trip = st.radio("End itinerary?", ["No", "Yes"])
 
