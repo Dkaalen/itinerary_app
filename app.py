@@ -32,7 +32,7 @@ h1, h2, h3 { color: #ffffff; }
 st.title("Nordic Itinerary Builder")
 
 # --- DATA ---
-DESTINATIONS = destination_options()
+DESTINATIONS = ["Oslo", "Stockholm", "Copenhagen", "Helsinki", "Reykjavik", "Bergen"]
 
 TRANSPORT_OPTIONS = {
     "Bergen": [
