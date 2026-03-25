@@ -27,28 +27,44 @@ h1, h2, h3 { color: #ffffff; }
 # --- TITLE ---
 st.title("Nordic Itinerary Builder")
 
-# --- DATA (STRUCTURED – EASY TO MOVE TO EXCEL LATER) ---
-
-destinations = ["Oslo", "Stockholm", "Copenhagen", "Helsinki", "Reykjavik"]
-
-activities = {
-    "Oslo": [
-        {"name": "Fjord Sightseeing Cruise (Electric Boat)", "adult": 50, "kid": 30},
-        {"name": "Essential Oslo Walking Tour", "adult": 40, "kid": 25}
-    ],
-    "Bergen": [
-        {"name": "Walking Tour of Bergen Past & Present", "adult": 40, "kid": 25},
-        {"name": "Mostraumen Fjord & Waterfall Cruise", "adult": 80, "kid": 60},
-        {"name": "Fløibanen Funicular Tickets", "adult": 25, "kid": 15}
-    ]
-}
+# --- DATA ---
+destinations = DESTINATIONS
 
 transport_options = {
     "Bergen": [
         {"name": "Norway in a Nutshell (Recommended)", "adult": 390, "kid": 290},
-        {"name": "Direct Train", "adult": 120, "kid": 80}
+        {"name": "Direct Train", "adult": 120, "kid": 80},
     ]
 }
+
+
+# --- HELPERS ---
+def activity_name(activity):
+    if isinstance(activity, dict):
+        return activity.get("name", "Unnamed activity")
+    return getattr(activity, "name", "Unnamed activity")
+
+
+def activity_adult_price(activity):
+    if isinstance(activity, dict):
+        return activity.get("adult", 0)
+    return getattr(activity, "adult", 0)
+
+
+def activity_kid_price(activity):
+    if isinstance(activity, dict):
+        return activity.get("kid", 0)
+    return getattr(activity, "kid", 0)
+
+
+def get_activity_options(destination):
+    activities = get_activities(destination)
+
+    if not activities:
+        return []
+
+    return activities
+
 
 # --- LAYOUT ---
 col1, col2 = st.columns([2, 1])
@@ -56,13 +72,14 @@ col1, col2 = st.columns([2, 1])
 total_price = 0
 
 with col1:
-
     # --- START ---
     st.subheader("Start your journey")
     destination = st.selectbox("Starting destination", destinations)
 
     if destination == "Oslo":
         st.caption("Recommended: 1–2 nights")
+    elif destination == "Bergen":
+        st.caption("Recommended: 2 nights")
 
     nights = st.number_input("Number of nights", min_value=1, max_value=5, step=1)
 
@@ -71,21 +88,35 @@ with col1:
 
     selected_activities = []
 
+    destination_activities = get_activity_options(destination)
+
     for day in range(1, nights + 1):
         st.markdown(f"**Day {day}**")
 
-        options = activities.get(destination, [])
-        labels = [a["name"] for a in options]
+        if destination_activities:
+            labels = [activity_name(a) for a in destination_activities]
 
-        choice = st.selectbox("", labels, key=f"{destination}_{day}")
-        selected_activities.append(choice)
+            choice = st.selectbox("", labels, key=f"{destination}_{day}")
+            selected_activities.append(choice)
 
-        for a in options:
-            if a["name"] == choice:
-                st.markdown(f"<div class='card'>"
-                            f"<div class='price'>{a['adult']}€ adult / {a['kid']}€ kid</div>"
-                            f"</div>", unsafe_allow_html=True)
-                total_price += a["adult"]
+            selected_activity = next(
+                a for a in destination_activities if activity_name(a) == choice
+            )
+
+            adult_price = activity_adult_price(selected_activity)
+            kid_price = activity_kid_price(selected_activity)
+
+            st.markdown(
+                f"<div class='card'>"
+                f"<div class='price'>{adult_price}€ adult / {kid_price}€ kid</div>"
+                f"</div>",
+                unsafe_allow_html=True,
+            )
+
+            total_price += adult_price
+        else:
+            st.markdown("<div class='card'>No activities available yet.</div>", unsafe_allow_html=True)
+            selected_activities.append("No activity selected")
 
     # --- NEXT DESTINATION ---
     st.subheader("Continue your journey")
@@ -99,9 +130,12 @@ with col1:
 
     selected_transport = next(t for t in transport_list if t["name"] == transport_choice)
 
-    st.markdown(f"<div class='card'>"
-                f"<div class='price'>{selected_transport['adult']}€ adult / {selected_transport['kid']}€ kid</div>"
-                f"</div>", unsafe_allow_html=True)
+    st.markdown(
+        f"<div class='card'>"
+        f"<div class='price'>{selected_transport['adult']}€ adult / {selected_transport['kid']}€ kid</div>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
 
     total_price += selected_transport["adult"]
 
@@ -123,25 +157,37 @@ with col1:
         st.subheader("Experiences in Bergen")
 
         bergen_selected = []
+        bergen_activities = get_activity_options("Bergen")
 
         for day in range(1, bergen_nights + 1):
             st.markdown(f"**Day {day}**")
 
-            options = activities["Bergen"]
-            labels = [a["name"] for a in options]
+            if bergen_activities:
+                labels = [activity_name(a) for a in bergen_activities]
 
-            choice = st.selectbox("", labels, key=f"bergen_{day}")
-            bergen_selected.append(choice)
+                choice = st.selectbox("", labels, key=f"bergen_{day}")
+                bergen_selected.append(choice)
 
-            for a in options:
-                if a["name"] == choice:
-                    st.markdown(f"<div class='card'>"
-                                f"<div class='price'>{a['adult']}€ adult / {a['kid']}€ kid</div>"
-                                f"</div>", unsafe_allow_html=True)
-                    total_price += a["adult"]
+                selected_activity = next(
+                    a for a in bergen_activities if activity_name(a) == choice
+                )
+
+                adult_price = activity_adult_price(selected_activity)
+                kid_price = activity_kid_price(selected_activity)
+
+                st.markdown(
+                    f"<div class='card'>"
+                    f"<div class='price'>{adult_price}€ adult / {kid_price}€ kid</div>"
+                    f"</div>",
+                    unsafe_allow_html=True,
+                )
+
+                total_price += adult_price
+            else:
+                st.markdown("<div class='card'>No Bergen activities available yet.</div>", unsafe_allow_html=True)
+                bergen_selected.append("No activity selected")
 
 with col2:
-
     st.subheader("Your itinerary")
 
     st.markdown(f"**Start:** {destination}")
@@ -163,9 +209,7 @@ with col2:
             st.markdown(f"Bergen Day {i}: {act}")
 
     st.markdown("---")
-
     st.subheader("Estimated price")
-
     st.markdown(f"### {total_price} € per adult")
 
     end_trip = st.radio("End itinerary?", ["No", "Yes"])
