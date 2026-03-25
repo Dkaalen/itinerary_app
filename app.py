@@ -48,26 +48,36 @@ RECOMMENDED_NIGHTS = {
 
 
 # --- HELPERS ---
-def field(item, key, default=None):
-    if isinstance(item, dict):
-        return item.get(key, default)
-    return getattr(item, key, default)
+def field(item, keys, default=None):
+    if not isinstance(keys, list):
+        keys = [keys]
+
+    for key in keys:
+        if isinstance(item, dict):
+            if key in item and item[key] not in (None, ""):
+                return item[key]
+        else:
+            value = getattr(item, key, None)
+            if value not in (None, ""):
+                return value
+
+    return default
 
 
 def activity_name(activity):
-    return field(activity, "name", "Unnamed activity")
+    return field(activity, ["name", "title", "activity", "activity_name"], "Unnamed activity")
 
 
 def activity_adult_price(activity):
-    return field(activity, "adult", 0) or 0
+    return field(activity, ["adult", "adult_price", "price_adult", "price"], 0) or 0
 
 
 def activity_kid_price(activity):
-    return field(activity, "kid", 0) or 0
+    return field(activity, ["kid", "child", "child_price", "price_child"], 0) or 0
 
 
 def activity_description(activity):
-    return field(activity, "description", "")
+    return field(activity, ["description", "summary", "details", "info"], "")
 
 
 def destination_activity_options(destination):
